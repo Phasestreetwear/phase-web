@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PHASE STREETWEAR</title>
+    <title>O NÁS | PHASE STREETWEAR</title>
     <style>
         /* Základní reset a nastavení stránky */
         body, html {
@@ -17,7 +17,7 @@
             overflow: hidden;
         }
 
-        /* Matrix pozadí - musí být pod vším */
+        /* Matrix pozadí */
         #matrix-canvas {
             position: absolute;
             top: 0;
@@ -27,7 +27,7 @@
             z-index: 1;
         }
 
-        /* Hlavní obsah - pevně centrovaný, nesmí přetéct přes okraj */
+        /* Hlavní obsah nad plátnem */
         .content-wrapper {
             position: relative;
             z-index: 2;
@@ -42,39 +42,54 @@
             text-align: center;
         }
 
-        /* OBRÁZEK LEBKY - s pojistkou proti vytlačení tlačítek z obrazovky */
-        .skull-image {
-            width: auto;
-            max-width: 80vw;
-            height: auto;
-            max-height: 40vh; /* Toto drží lebku na uzdě, aby nevytlačila tlačítka pryč */
-            object-fit: contain;
-            margin-bottom: 40px; 
-            
-            /* Průhlednost černé */
-            mix-blend-mode: screen; 
-            
-            /* Zelená záře kolem bílé lebky */
-            filter: drop-shadow(0 0 15px #0f0) drop-shadow(0 0 40px #0f0);
-            
-            /* Pomalé pulzování záře */
-            animation: pulse-glow 2s infinite alternate;
-        }
-
-        @keyframes pulse-glow {
-            from { filter: drop-shadow(0 0 10px #0f0) drop-shadow(0 0 20px #0f0); }
-            to { filter: drop-shadow(0 0 20px #0f0) drop-shadow(0 0 50px #0f0); }
-        }
-
-        /* Kontejner pro tlačítka */
-        .buttons {
+        /* Černý box se zeleným pulzujícím rámečkem a září */
+        .box {
+            background-color: #000; 
+            border: 2px solid #0f0; 
+            padding: 40px;
+            max-width: 600px;
+            width: 90%;
+            box-sizing: border-box;
             display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 20px;
+            flex-direction: column;
+            align-items: center;
+            
+            /* Spuštění animace pulzování pro rámeček a stín */
+            animation: border-pulse-glow 2s infinite alternate;
         }
 
-        /* Tlačítka podle předlohy (upraveno i pro odkazy) */
+        /* Animace pulzujícího rámečku a zelené záře */
+        @keyframes border-pulse-glow {
+            from {
+                border-color: #0a0;
+                box-shadow: 0 0 10px #0a0, inset 0 0 5px #0a0;
+            }
+            to {
+                border-color: #0f0;
+                box-shadow: 0 0 25px #0f0, inset 0 0 10px #0f0;
+            }
+        }
+
+        /* Styl pro logo na stránce O NÁS */
+        .logo-image {
+            width: auto;
+            max-width: 100%;
+            height: auto;
+            max-height: 180px;
+            object-fit: contain;
+            margin-bottom: 25px;
+            mix-blend-mode: screen;
+        }
+
+        /* Popisný text - změněno na bílou barvu */
+        p {
+            color: #fff; 
+            line-height: 1.6;
+            margin-bottom: 35px;
+            font-size: 16px;
+        }
+
+        /* Tlačítko zpět */
         .btn {
             background-color: #0f0;
             color: #000;
@@ -85,11 +100,10 @@
             font-weight: bold;
             cursor: pointer;
             text-transform: uppercase;
+            text-decoration: none;
+            display: inline-block;
             box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
             transition: all 0.2s ease;
-            text-decoration: none; /* Odstraní podtržení u odkazů */
-            display: inline-block;
-            box-sizing: border-box;
         }
 
         .btn:hover {
@@ -100,20 +114,22 @@
 </head>
 <body>
 
+    <!-- Plátno pro animované pozadí -->
     <canvas id="matrix-canvas"></canvas>
 
+    <!-- Hlavní vrstva s obsahem -->
     <div class="content-wrapper">
-        
-        <img src="skull.png" alt="Lebka Phase" class="skull-image">
-
-        <div class="buttons">
-            <a href="https://www.instagram.com/phase_streetwear/" target="_blank" class="btn">INSTAGRAM</a>
+        <div class="box">
+            <!-- Vložené logo -->
+            <img src="logo.png" alt="Logo Phase" class="logo-image">
             
-            <a href="o-nas.html" class="btn">O NÁS</a>            <button class="btn" onclick="alert('Připravuje se...')">SHOP</button>
+            <!-- Tento text bude nyní svítit bíle -->
+            <p>Sem můžeš napsat svůj vlastní text o tom, co PHASE STREETWEAR reprezentuje, jaké jsou vaše cíle nebo jak značka vznikla...</p>
+            <a href="index.html" class="btn">ZPĚT NA ÚVOD</a>
         </div>
-
     </div>
 
+    <!-- Script pro identické matrix pozadí s animací nápisu PHASE_ -->
     <script>
         const canvas = document.getElementById('matrix-canvas');
         const ctx = canvas.getContext('2d');
@@ -149,7 +165,6 @@
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
             
-            // Pojistka, aby to nepadalo při nulové velikosti okna
             columns = Math.max(1, Math.floor(canvas.width / fontSize) + 1);
             rows = Math.max(1, Math.floor(canvas.height / fontSize) + 1);
             grid = [];
@@ -169,7 +184,6 @@
                     delayTimer--;
                 } else {
                     wordRow = Math.floor(Math.random() * rows);
-                    // Pojistka, aby slovo nepřeteklo přes pravý okraj plátna
                     wordCol = Math.max(0, Math.floor(Math.random() * (columns - targetWord.length)));
                     
                     revealQueue = shuffleArray([0, 1, 2, 3, 4, 5]);
@@ -214,7 +228,7 @@
 
         // Vykreslování animace
         function draw() {
-            if (columns === 0 || rows === 0) return; // Ochrana proti neexistujícímu plátnu
+            if (columns === 0 || rows === 0) return;
 
             ctx.fillStyle = '#000';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -261,14 +275,12 @@
                     ctx.fillText(charToDraw, col * fontSize, row * fontSize);
                 }
             }
-            ctx.shadowBlur = 0; // Reset
+            ctx.shadowBlur = 0;
         }
 
-        // Spuštění po načtení
+        // Spuštění
         initGrid();
         setInterval(draw, 50);
-
-        // Ochrana při tahání za velikost okna prohlížeče
         window.addEventListener('resize', initGrid);
     </script>
 </body>
