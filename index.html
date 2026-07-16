@@ -16,11 +16,12 @@
             color: #0f0;
             font-family: 'Courier New', Courier, monospace;
             overflow: hidden;
+            position: fixed;
         }
 
         /* Matrix pozadí - musí být pod vším */
         #matrix-canvas {
-            position: absolute;
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
@@ -37,8 +38,7 @@
             align-items: center;
             justify-content: center;
             width: 100%;
-            height: 100dvh;
-            min-height: 100dvh;
+            height: 100vh;
             box-sizing: border-box;
             padding: 20px;
             text-align: center;
@@ -271,7 +271,7 @@
         setInterval(draw, 50);
 
         // Ochrana při tahání za velikost okna prohlížeče
-        window.addEventListener('resize', initGrid);
+        //window.addEventListener('resize', initGrid);
     </script>
 </body>
 </html>
