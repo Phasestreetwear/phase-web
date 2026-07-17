@@ -127,12 +127,12 @@
             <img src="logo.png" alt="Logo Phase" class="logo-image">
             
             <!-- Tento text bude nyní svítit bíle -->
-            <p>SELFMADE SELFMADE SELFMADE SELFMADE SELFMADE SELFMADE SELFMADE SELFMADE SELFMADE SELFMADE SELFMADE SELFMADE SELFMADE SELFMADE SELFMADE SELFMADE SELFMADE SELFMADE SELFMADE SELFMADE</p>
+            <p>Sem můžeš napsat svůj vlastní text o tom, co PHASE STREETWEAR reprezentuje, jaké jsou vaše cíle nebo jak značka vznikla...</p>
             <a href="index.html" class="btn">ZPĚT NA ÚVOD</a>
         </div>
     </div>
 
-    <!-- Script pro identické matrix pozadí s animací nápisu PHASE_ -->
+    <!-- Script pro identické matrix pozadí s animací nezávislých nápisů -->
     <script>
         const canvas = document.getElementById('matrix-canvas');
         const ctx = canvas.getContext('2d');
@@ -141,14 +141,27 @@
         const fontSize = 16;
         let columns = 0, rows = 0, grid = [];
 
-        // Proměnné pro animaci slova PHASE_
-        const targetWord = "PHASE_";
-        let wordRow = 0;
-        let wordCol = 0;
-        let wordState = 'IDLE'; 
-        let revealQueue = [];
-        let revealedLetters = new Set();
-        let delayTimer = 0;
+        // --- 1. SYSTÉM: PHASE_ ---
+        const phaseWord = "PHASE_";
+        let phaseRow = -1, phaseCol = -1;
+        let phaseState = 'IDLE';
+        let phaseQueue = [];
+        let phaseRevealed = new Set();
+        let phaseTimer = 20;
+
+        // --- 2. SYSTÉM: THE_END -> IS_THE_BEGINNING ---
+        const endWord = "THE_END";
+        let endRow = -1, endCol = -1;
+        let endQueue = [];
+        let endRevealed = new Set();
+
+        const beginWord = "IS_THE_BEGINNING";
+        let beginRow = -1, beginCol = -1;
+        let beginQueue = [];
+        let beginRevealed = new Set();
+
+        let sequenceState = 'IDLE'; 
+        let sequenceTimer = 45; 
 
         // Bezpečná funkce pro zamíchání pole
         function shuffleArray(array) {
@@ -161,6 +174,11 @@
                 array[randomIndex] = temp;
             }
             return array;
+        }
+
+        // Pomocná funkce pro kontrolu překryvu řádků s rezervou rozestupu
+        function isRowTooClose(rowA, rowB) {
+            return Math.abs(rowA - rowB) < 2; // nápisy musí být aspoň 2 řádky od sebe
         }
 
         // Inicializace mřížky znaků
@@ -176,54 +194,182 @@
                 grid.push(letters.charAt(Math.floor(Math.random() * letters.length)));
             }
             
-            wordState = 'IDLE';
-            delayTimer = 20;
+            phaseState = 'IDLE';
+            phaseTimer = 20;
+            sequenceState = 'IDLE';
+            sequenceTimer = 50;
         }
 
-        // Řízení stavu zobrazení slova PHASE_
-        function updateWordLogic() {
-            if (wordState === 'IDLE') {
-                if (delayTimer > 0) {
-                    delayTimer--;
+        // Logika pro samostatné zobrazení PHASE_
+        function updatePhaseLogic() {
+            if (phaseState === 'IDLE') {
+                if (phaseTimer > 0) {
+                    phaseTimer--;
                 } else {
-                    wordRow = Math.floor(Math.random() * rows);
-                    wordCol = Math.max(0, Math.floor(Math.random() * (columns - targetWord.length)));
+                    let validRow = false;
+                    let attempts = 0;
+                    while (!validRow && attempts < 15) {
+                        phaseRow = Math.floor(Math.random() * rows);
+                        validRow = true;
+                        if (sequenceState !== 'IDLE' && isRowTooClose(phaseRow, endRow)) validRow = false;
+                        if (sequenceState !== 'IDLE' && isRowTooClose(phaseRow, beginRow)) validRow = false;
+                        attempts++;
+                    }
+
+                    phaseCol = Math.max(0, Math.floor(Math.random() * (columns - phaseWord.length)));
                     
-                    revealQueue = shuffleArray([0, 1, 2, 3, 4, 5]);
-                    revealedLetters.clear();
-                    wordState = 'FORMING';
-                    delayTimer = 4;
+                    let indices = [];
+                    for(let i = 0; i < phaseWord.length; i++) indices.push(i);
+                    phaseQueue = shuffleArray(indices);
+                    phaseRevealed.clear();
+                    
+                    phaseState = 'FORMING';
+                    phaseTimer = 4;
                 }
-            } else if (wordState === 'FORMING') {
-                if (delayTimer > 0) {
-                    delayTimer--;
+            } else if (phaseState === 'FORMING') {
+                if (phaseTimer > 0) {
+                    phaseTimer--;
                 } else {
-                    if (revealQueue.length > 0) {
-                        revealedLetters.add(revealQueue.pop());
-                        delayTimer = 4; 
+                    if (phaseQueue.length > 0) {
+                        phaseRevealed.add(phaseQueue.pop());
+                        phaseTimer = 4; 
                     } else {
-                        wordState = 'VISIBLE';
-                        delayTimer = 60; 
+                        phaseState = 'VISIBLE';
+                        phaseTimer = 60; 
                     }
                 }
-            } else if (wordState === 'VISIBLE') {
-                if (delayTimer > 0) {
-                    delayTimer--;
+            } else if (phaseState === 'VISIBLE') {
+                if (phaseTimer > 0) {
+                    phaseTimer--;
                 } else {
-                    wordState = 'DISSOLVING';
-                    revealQueue = shuffleArray([0, 1, 2, 3, 4, 5]);
-                    delayTimer = 4;
+                    let indices = [];
+                    for(let i = 0; i < phaseWord.length; i++) indices.push(i);
+                    phaseQueue = shuffleArray(indices);
+                    phaseState = 'DISSOLVING';
+                    phaseTimer = 4;
                 }
-            } else if (wordState === 'DISSOLVING') {
-                if (delayTimer > 0) {
-                    delayTimer--;
+            } else if (phaseState === 'DISSOLVING') {
+                if (phaseTimer > 0) {
+                    phaseTimer--;
                 } else {
-                    if (revealQueue.length > 0) {
-                        revealedLetters.delete(revealQueue.pop());
-                        delayTimer = 4; 
+                    if (phaseQueue.length > 0) {
+                        phaseRevealed.delete(phaseQueue.pop());
+                        phaseTimer = 4; 
                     } else {
-                        wordState = 'IDLE';
-                        delayTimer = 30; 
+                        phaseState = 'IDLE';
+                        phaseRow = -1; 
+                        phaseTimer = Math.floor(Math.random() * 40) + 30; 
+                    }
+                }
+            }
+        }
+
+        // Logika pro propojenou sekvenci THE_END a IS_THE_BEGINNING
+        function updateSequenceLogic() {
+            if (sequenceState === 'IDLE') {
+                if (sequenceTimer > 0) {
+                    sequenceTimer--;
+                } else {
+                    let validEndRow = false;
+                    let attempts = 0;
+                    while (!validEndRow && attempts < 15) {
+                        endRow = Math.floor(Math.random() * rows);
+                        validEndRow = true;
+                        if (phaseState !== 'IDLE' && isRowTooClose(endRow, phaseRow)) validEndRow = false;
+                        attempts++;
+                    }
+                    endCol = Math.max(0, Math.floor(Math.random() * (columns - endWord.length)));
+                    
+                    let indices1 = [];
+                    for(let i = 0; i < endWord.length; i++) indices1.push(i);
+                    endQueue = shuffleArray(indices1);
+                    endRevealed.clear();
+
+                    let validBeginRow = false;
+                    attempts = 0;
+                    while (!validBeginRow && attempts < 15) {
+                        beginRow = Math.floor(Math.random() * rows);
+                        validBeginRow = true;
+                        if (isRowTooClose(beginRow, endRow)) validBeginRow = false;
+                        if (phaseState !== 'IDLE' && isRowTooClose(beginRow, phaseRow)) validBeginRow = false;
+                        attempts++;
+                    }
+                    beginCol = Math.max(0, Math.floor(Math.random() * (columns - beginWord.length)));
+
+                    let indices2 = [];
+                    for(let i = 0; i < beginWord.length; i++) indices2.push(i);
+                    beginQueue = shuffleArray(indices2);
+                    beginRevealed.clear();
+
+                    sequenceState = 'FORMING_FIRST';
+                    sequenceTimer = 4;
+                }
+            } else if (sequenceState === 'FORMING_FIRST') {
+                if (sequenceTimer > 0) {
+                    sequenceTimer--;
+                } else {
+                    if (endQueue.length > 0) {
+                        endRevealed.add(endQueue.pop());
+                        sequenceTimer = 4; 
+                    } else {
+                        sequenceState = 'VISIBLE_FIRST';
+                        sequenceTimer = 60; 
+                    }
+                }
+            } else if (sequenceState === 'VISIBLE_FIRST') {
+                if (sequenceTimer > 0) {
+                    sequenceTimer--;
+                } else {
+                    let indices1 = [];
+                    for(let i = 0; i < endWord.length; i++) indices1.push(i);
+                    endQueue = shuffleArray(indices1);
+
+                    sequenceState = 'TRANSITIONING';
+                    sequenceTimer = 4;
+                }
+            } else if (sequenceState === 'TRANSITIONING') {
+                if (sequenceTimer > 0) {
+                    sequenceTimer--;
+                } else {
+                    let changed = false;
+                    if (endQueue.length > 0) {
+                        endRevealed.delete(endQueue.pop());
+                        changed = true;
+                    }
+                    if (beginQueue.length > 0) {
+                        beginRevealed.add(beginQueue.pop());
+                        changed = true;
+                    }
+
+                    if (changed) {
+                        sequenceTimer = 4;
+                    } else {
+                        endRow = -1; 
+                        sequenceState = 'VISIBLE_SECOND';
+                        sequenceTimer = 60; 
+                    }
+                }
+            } else if (sequenceState === 'VISIBLE_SECOND') {
+                if (sequenceTimer > 0) {
+                    sequenceTimer--;
+                } else {
+                    let indices2 = [];
+                    for(let i = 0; i < beginWord.length; i++) indices2.push(i);
+                    beginQueue = shuffleArray(indices2);
+                    sequenceState = 'DISSOLVING_SECOND';
+                    sequenceTimer = 4;
+                }
+            } else if (sequenceState === 'DISSOLVING_SECOND') {
+                if (sequenceTimer > 0) {
+                    sequenceTimer--;
+                } else {
+                    if (beginQueue.length > 0) {
+                        beginRevealed.delete(beginQueue.pop());
+                        sequenceTimer = 4;
+                    } else {
+                        sequenceState = 'IDLE';
+                        beginRow = -1; 
+                        sequenceTimer = Math.floor(Math.random() * 50) + 40; 
                     }
                 }
             }
@@ -239,7 +385,8 @@
             ctx.textBaseline = 'top';
             ctx.font = fontSize + 'px monospace';
 
-            updateWordLogic();
+            updatePhaseLogic();
+            updateSequenceLogic();
 
             for (let row = 0; row < rows; row++) {
                 for (let col = 0; col < columns; col++) {
@@ -248,16 +395,33 @@
                     let charToDraw = grid[index];
                     let isWhiteLetter = false;
 
-                    // Kontrola zobrazení písmene z PHASE_
-                    if (row === wordRow && col >= wordCol && col < wordCol + targetWord.length) {
-                        let letterIndex = col - wordCol;
-                        if (revealedLetters.has(letterIndex)) {
+                    // 1. PHASE_
+                    if (phaseState !== 'IDLE' && row === phaseRow && col >= phaseCol && col < phaseCol + phaseWord.length) {
+                        let letterIndex = col - phaseCol;
+                        if (phaseRevealed.has(letterIndex)) {
                             isWhiteLetter = true;
-                            charToDraw = targetWord[letterIndex];
+                            charToDraw = phaseWord[letterIndex];
                         }
                     }
 
-                    // Problikávání zeleného textu
+                    // 2. THE_END
+                    if (sequenceState !== 'IDLE' && row === endRow && col >= endCol && col < endCol + endWord.length) {
+                        let letterIndex = col - endCol;
+                        if (endRevealed.has(letterIndex)) {
+                            isWhiteLetter = true;
+                            charToDraw = endWord[letterIndex];
+                        }
+                    }
+
+                    // 3. IS_THE_BEGINNING
+                    if (sequenceState !== 'IDLE' && row === beginRow && col >= beginCol && col < beginCol + beginWord.length) {
+                        let letterIndex = col - beginCol;
+                        if (beginRevealed.has(letterIndex)) {
+                            isWhiteLetter = true;
+                            charToDraw = beginWord[letterIndex];
+                        }
+                    }
+
                     if (!isWhiteLetter) {
                         if (Math.random() < 0.05) {
                             grid[index] = letters.charAt(Math.floor(Math.random() * letters.length));
@@ -265,7 +429,6 @@
                         charToDraw = grid[index];
                     }
 
-                    // Styl vykreslení
                     if (isWhiteLetter) {
                         ctx.fillStyle = '#fff';
                         ctx.shadowColor = '#fff';
@@ -284,7 +447,6 @@
         // Spuštění
         initGrid();
         setInterval(draw, 50);
-        //window.addEventListener('resize', initGrid);
     </script>
 </body>
 </html>
