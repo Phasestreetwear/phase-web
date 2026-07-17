@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHASE_01 | RESTRICTED_ACCESS</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            color: #0f0;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        #matrix-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .terminal {
+            width: 95%;
+            max-width: 550px;
+            background: rgba(0, 8, 0, 0.95);
+            border: 2px solid #0f0;
+            box-shadow: 0 0 25px rgba(0, 255, 0, 0.25);
+            padding: 25px;
+            box-sizing: border-box;
+            position: relative;
+            z-index: 2;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 1.3rem;
+            margin: 0 0 15px 0;
+            text-transform: uppercase;
+            border-bottom: 2px solid #0f0;
+            padding-bottom: 10px;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        .classification {
+            color: #ff3333;
+            font-weight: bold;
+            font-size: 0.8rem;
+            letter-spacing: 3px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #ff3333;
+            padding-bottom: 10px;
+        }
+
+        .attempts-left {
+            color: #ff3333;
+            font-weight: bold;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            text-align: right;
+            animation: blink 1s infinite;
+        }
+
+        .terminal-screen {
+            height: 180px;
+            overflow-y: auto;
+            border: 1px solid #005500;
+            background: rgba(0, 5, 0, 0.7);
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+            line-height: 1.4;
+            text-align: left;
+        }
+
+        .input-line {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+        }
+
+        .prompt {
+            color: #0f0;
+            font-weight: bold;
+        }
+
+        .code-input {
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid #0f0;
+            color: #fff;
+            font-family: inherit;
+            font-size: 1.1rem;
+            width: 60px;
+            outline: none;
+            letter-spacing: 5px;
+            text-shadow: 0 0 5px #0f0;
+            padding-bottom: 2px;
+            text-align: center;
+        }
+
+        /* STYL PRO NOVÝ TEXT NÁPOVĚDY */
+        .hint-text {
+            color: #888;
+            font-size: 0.75rem;
+            margin-bottom: 20px;
+            letter-spacing: 0.5px;
+            line-height: 1.3;
+        }
+
+        .btn {
+            background-color: transparent;
+            color: #0f0;
+            border: 2px solid #0f0;
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-family: inherit;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .btn:hover {
+            background-color: #0f0;
+            color: #000;
+            box-shadow: 0 0 20px #0f0;
+        }
+
+        .btn-secondary {
+            display: inline-block;
+            background-color: transparent;
+            color: #888;
+            border: 1px solid #444;
+            padding: 10px 20px;
+            font-size: 0.85rem;
+            font-family: inherit;
+            cursor: pointer;
+            text-transform: uppercase;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .btn-secondary:hover {
+            color: #0f0;
+            border-color: #0f0;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+        }
+
+        .secret-leak {
+            display: none;
+            text-align: center;
+        }
+
+        .leak-title {
+            color: #fff;
+            font-size: 1.4rem;
+            font-weight: bold;
+            text-shadow: 0 0 10px #0f0;
+            margin-bottom: 5px;
+        }
+
+        .leak-subtitle {
+            color: #ff3333;
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        /* HLAVNÍ WRAPPER - drží stabilní zelený rámeček ze všech stran */
+        .image-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+            max-width: 400px;
+            margin-bottom: 15px;
+            border: 2px solid #0f0;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+            background-color: #050505;
+            overflow: hidden;
+        }
+
+        /* Původní čistý hlavní obrázek */
+        .leak-image {
+            width: 100%;
+            height: auto;
+            pointer-events: none;
+            display: block;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Glitchovací kopie obrázku s fixnutým absolutním roztažením */
+        .image-wrapper::before,
+        .image-wrapper::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: inherit;
+            background-size: cover;
+            background-position: center;
+            z-index: 2;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        /* Vrstva 1 posunutá doprava - používá procentuální inset přes celou výšku */
+        .image-wrapper.glitch-active::before {
+            visibility: visible;
+            left: 3px;
+            animation: full-glitch-1 1s infinite linear alternate-reverse;
+        }
+
+        /* Vrstva 2 posunutá doleva - používá procentuální inset přes celou výšku */
+        .image-wrapper.glitch-active::after {
+            visibility: visible;
+            left: -3px;
+            animation: full-glitch-2 1.5s infinite linear alternate-reverse;
+        }
+
+        .image-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            background: transparent;
+        }
+
+        /* ANIMACE POMOCÍ INSET PROCENT - skáče náhodně od 0% do 100% výšky obrázku */
+        @keyframes full-glitch-1 {
+            0% { clip-path: inset(10% 0 85% 0); }
+            10% { clip-path: inset(80% 0 15% 0); }
+            20% { clip-path: inset(40% 0 52% 0); }
+            30% { clip-path: inset(92% 0 5% 0); }
+            40% { clip-path: inset(25% 0 70% 0); }
+            50% { clip-path: inset(65% 0 30% 0); }
+            60% { clip-path: inset(2% 0 95% 0); }
+            70% { clip-path: inset(82% 0 14% 0); }
+            80% { clip-path: inset(50% 0 46% 0); }
+            90% { clip-path: inset(15% 0 82% 0); }
+            100% { clip-path: inset(70% 0 25% 0); }
+        }
+
+        @keyframes full-glitch-2 {
+            0% { clip-path: inset(65% 0 32% 0); }
+            15% { clip-path: inset(5% 0 92% 0); }
+            30% { clip-path: inset(85% 0 10% 0); }
+            45% { clip-path: inset(35% 0 60% 0); }
+            60% { clip-path: inset(75% 0 22% 0); }
+            75% { clip-path: inset(18% 0 78% 0); }
+            90% { clip-path: inset(55% 0 42% 0); }
+            100% { clip-path: inset(45% 0 50% 0); }
+        }
+
+        .locked-screen {
+            color: #ff3333;
+            text-shadow: 0 0 10px #ff0000;
+            font-size: 1.3rem;
+            display: none;
+            line-height: 1.8;
+            text-align: center;
+        }
+
+        @keyframes blink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="matrix-canvas"></canvas>
+
+    <div class="terminal">
+        <div id="game-container">
+            <div class="classification" id="top-bar">PŘÍSNĚ TAJNÉ // DŮVĚRNÉ</div>
+            <h1 id="title-text">INICIALIZACE SYSTÉMŮ...</h1>
+            <div class="attempts-left" id="warning-bar" style="visibility: hidden;">BEZPEČNOSTNÍ PROTOKOL: POUZE 1 POKUS!</div>
+            
+            <div class="terminal-screen" id="screen">
+                > SPOJOVÁNÍ S PHASE_MAINFRAME...<br>
+                > NAČÍTÁNÍ BEZPEČNOSTNÍHO ROZHRANÍ...<br>
+                > SKENOVÁNÍ HOSTITELSKÉHO PŘIPOJENÍ...
+            </div>
+
+            <div id="input-area" style="display: none;">
+                <div class="input-line">
+                    <span class="prompt">root@phase_mainframe:~$</span>
+                    <input type="password" class="code-input" id="user-input" maxlength="3" placeholder="???" autocomplete="off">
+                </div>
+                <!-- PŘIDANÝ TEXT NÁPOVĚDY POD POLÍČKO -->
+                <div class="hint-text">
+                    NÁPOVĚDA: KÓD LZE NALÉZT NA phase_streetwear INSTAGRAMU
+                </div>
+                <button class="btn" id="submit-btn" onclick="processAccess()">PROLOMIT ZABEZPEČENÍ</button>
+            </div>
+        </div>
+
+        <div class="locked-screen" id="permanently-locked">
+            [!!!] DETEKOVÁN POKUS O PRŮNIK [!!!]<br>
+            PŘÍSTUP DO DATABÁZE TRVALE ZABLOKOVÁN.<br>
+            VAŠE IP ADRESA BYLA PŘEDÁNA CYBER-SECURITY DIVIZI.<br>
+            <span style="font-size: 0.9rem; color: #888;">CHYBOVÝ KÓD: ACCESS_DENIED_0x369</span>
+        </div>
+
+        <div class="secret-leak" id="secret">
+            <div class="leak-title">NARUŠENÍ SOUBORU: ÚSPĚŠNÉ</div>
+            <div class="leak-subtitle">// REKONSTRUKCE VIZUÁLNÍCH DAT... HOTOVO</div>
+            
+            <div class="image-wrapper" id="leak-wrapper">
+                <div class="image-overlay"></div>
+                <div id="image-holder"></div>
+            </div>
+            
+            <div style="font-size: 0.8rem; color: #888; margin-bottom: 10px;">
+                PROJEKT: PHASE_01_HOODIE // TAJNÉ DATA
+            </div>
+        </div>
+
+        <a href="index.html" class="btn-secondary">ZPĚT NA ÚVOD</a>
+    </div>
+
+    <script>
+        // --- BLOKACE PRAVÉHO TLAČÍTKA A KLÁVESNICE ---
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('keydown', e => {
+            if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I','J','C'].includes(e.key)) || (e.ctrlKey && e.key === 'u') || (e.ctrlKey && e.key === 's')) {
+                e.preventDefault();
+                return false;
+            }
+        });
+
+        // --- TRVALÁ BLOKACE (3-ÚROVŇOVÁ STRUKTURA) ---
+        function checkLockStatus() {
+            const l = localStorage.getItem('p_01_b');
+            const s = sessionStorage.getItem('p_01_b');
+            const c = document.cookie.includes('p_01_b=true');
+            if (l === '1' || s === '1' || c) {
+                if (!l) localStorage.setItem('p_01_b', '1');
+                if (!s) sessionStorage.setItem('p_01_b', '1');
+                if (!c) document.cookie = "p_01_b=true; max-age=31536000; path=/";
+                return true;
+            }
+            return false;
+        }
+
+        function setLockStatus() {
+            localStorage.setItem('p_01_b', '1');
+            sessionStorage.setItem('p_01_b', '1');
+            document.cookie = "p_01_b=true; max-age=31536000; path=/";
+        }
+
+        // --- CANVAS CONFIG ---
+        const mCanvas = document.getElementById('matrix-canvas');
+        const mCtx = mCanvas.getContext('2d');
+        function resizeCanvas() { mCanvas.width = window.innerWidth; mCanvas.height = window.innerHeight; }
+        resizeCanvas();
+
+        let isScanning = true;
+        let scanY = 0;
+        const scanSpeed = 6; 
+
+        const katakana = "ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ1234567890";
+        const alphabet = katakana.split("");
+        const fontSize = 16;
+        let columns = mCanvas.width / fontSize;
+        let rainDrops = Array.from({length: columns}, () => ({ y: Math.random() * -100, specialY: -100 }));
+
+        const screen = document.getElementById('screen');
+        const userInput = document.getElementById('user-input');
+        const gameContainer = document.getElementById('game-container');
+        const lockedScreen = document.getElementById('permanently-locked');
+        const secret = document.getElementById('secret');
+        const inputArea = document.getElementById('input-area');
+        const titleText = document.getElementById('title-text');
+        const warningBar = document.getElementById('warning-bar');
+
+        const mainEngine = () => {
+            if (isScanning) {
+                mCtx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                mCtx.fillRect(0, 0, mCanvas.width, mCanvas.height);
+                mCtx.font = fontSize + 'px monospace';
+                for (let i = 0; i < rainDrops.length; i++) {
+                    const col = rainDrops[i];
+                    if (col.y * fontSize < scanY) {
+                        mCtx.fillStyle = '#0F0';
+                        mCtx.fillText(alphabet[Math.floor(Math.random() * alphabet.length)], i * fontSize, col.y * fontSize);
+                    }
+                    col.y += 1;
+                    if (col.y * fontSize > mCanvas.height) col.y = 0;
+                }
+                mCtx.strokeStyle = '#00ff00'; mCtx.lineWidth = 4; mCtx.shadowBlur = 25; mCtx.shadowColor = '#00ff00';
+                mCtx.beginPath(); mCtx.moveTo(0, scanY); mCtx.lineTo(mCanvas.width, scanY); mCtx.stroke();
+                mCtx.shadowBlur = 0; scanY += scanSpeed;
+                if (scanY > mCanvas.height) {
+                    isScanning = false;
+                    rainDrops.forEach(c => c.y = Math.random() * -50);
+                    startInterface();
+                }
+            } else {
+                mCtx.fillStyle = 'rgba(0, 0, 0, 0.05)'; mCtx.fillRect(0, 0, mCanvas.width, mCanvas.height); mCtx.font = fontSize + 'px monospace';
+                const word = "PHASE_";
+                for (let i = 0; i < rainDrops.length; i++) {
+                    const col = rainDrops[i];
+                    if (col.y >= col.specialY && col.y < col.specialY + word.length) {
+                        mCtx.fillStyle = '#FFF'; mCtx.shadowBlur = 15; mCtx.shadowColor = '#FFF';
+                        mCtx.fillText(word[Math.floor(col.y - col.specialY)], i * fontSize, col.y * fontSize);
+                        mCtx.shadowBlur = 0;
+                    } else {
+                        mCtx.fillStyle = '#0F0';
+                        mCtx.fillText(alphabet[Math.floor(Math.random() * alphabet.length)], i * fontSize, col.y * fontSize);
+                    }
+                    col.y++;
+                    if (col.y * fontSize > mCanvas.height) {
+                        col.y = 0;
+                        col.specialY = Math.random() > 0.97 ? Math.floor(Math.random() * 20) : -100;
+                    }
+                }
+            }
+        };
+        setInterval(mainEngine, 30);
+        window.addEventListener('resize', resizeCanvas);
+
+        function startInterface() {
+            if (checkLockStatus()) { showPermanentlyLocked(); return; }
+            titleText.innerText = "SYSTEM_DECRYPTOR v9.2";
+            warningBar.style.visibility = "visible";
+            screen.innerHTML += `<br><span style="color:#0f0;">> SKENOVÁNÍ DOKONČENO. BEZPEČNÉ SPOJENÍ NAVÁZÁNO.</span><br>> ZABEZPEČENÍ VYŽADUJE 3-MÍSTNÝ KLÍČ...`;
+            screen.scrollTop = screen.scrollHeight;
+            inputArea.style.display = "block";
+        }
+
+        window.onload = function() {
+            setInterval(checkLockStatus, 500);
+            if (checkLockStatus()) { isScanning = false; showPermanentlyLocked(); }
+        };
+
+        userInput.addEventListener('keypress', e => { if (e.key === 'Enter') processAccess(); });
+        userInput.addEventListener('input', function() { this.value = this.value.replace(/[^0-9]/g, ''); });
+
+        function processAccess() {
+            if (checkLockStatus()) { showPermanentlyLocked(); return; }
+            const val = userInput.value.trim(); 
+            if (val.length !== 3) {
+                screen.innerHTML += `<br><span style="color:#ff3333;">> CHYBA: KORUPCE DAT. ZADEJTE PŘESNĚ 3 ZNAKY!</span>`;
+                screen.scrollTop = screen.scrollHeight;
+                return;
+            }
+
+            const char_alpha = "3";
+            const char_beta  = "6";
+            const char_gamma = "9";
+
+            if (val[0] === char_alpha && val[1] === char_beta && val[2] === char_gamma) {
+                gameContainer.style.display = 'none';
+                const p1 = "LE"; const p2 = "AK"; const ext = ".p"; const g = "ng";
+                const imgPath = p1 + p2 + ext + g;
+                
+                const img = document.createElement('img');
+                img.src = imgPath;
+                img.className = "leak-image";
+                img.setAttribute('draggable', 'false');
+                document.getElementById('image-holder').appendChild(img);
+                
+                const wrapper = document.getElementById('leak-wrapper');
+                wrapper.style.backgroundImage = `url(${imgPath})`;
+                wrapper.classList.add('glitch-active');
+
+                secret.style.display = 'block';
+            } else {
+                setLockStatus();
+                showPermanentlyLocked();
+            }
+        }
+
+        function showPermanentlyLocked() {
+            gameContainer.style.display = 'none';
+            secret.style.display = 'none';
+            lockedScreen.style.display = 'block';
+            document.body.style.backgroundColor = '#150000'; 
+        }
+    </script>
+</body>
+</html>
